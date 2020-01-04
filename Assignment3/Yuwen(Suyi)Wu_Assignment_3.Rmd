@@ -1,0 +1,283 @@
+---
+title: "Assignment 3"
+author: '***Yuwen(Suyi)Wu 5:45-7:45***'
+date: "3/28/2019"
+output: word_document
+---
+
+i. Executive Summary:
+
+In this research, we will present a possible model of the literacy rate across countries at year 2014 in order to better understand which social economic factors may be related to the literacy rate. The process of this research includes data searching, raw data clean, data transformation, multiple linear regression model building, assumption validation and hypothesis test based on the statistical software R. We could see the conclustion that Female Unemployment rate and Internet using rate are significant related to a country's literacy rate. The dataset is based on World Bank(http://data.worldbank.org/indicator). 
+
+ii. Introduction:
+
+The data of Literacy rate we focused on is based on the adult total (% of people ages 15 and above), which is the percentage of people ages 15 and above who can both read and write with understanding a short simple statement about their everyday life.
+
+Why should we study the literacy rate? From the World Bank Website, Literacy rate is an outcome indicator to evaluate educational attainment. Also, this indicator could be used to forecast future educated labor force since country with high educated labor force has higher probability to bring high GDP and high technology improvement. Additional, with the process of globalization, a country with high litteracy rate could effectively participate global issues and gobal markets, which will bring higher interaction between countries. Thus, understanding which factors would affect the literacy rate is helpful for a country and also for culture development.
+
+iii. Data:
+
+My data is provided by the World Bank(http://data.worldbank.org/indicator). In this website, I selected 10 factors which I think are related to literacy rate.
+
+Literacy rate, adult total (% of people ages 15 and above): Adult literacy rate is the percentage of people ages 15 and above who can both read and write with understanding a short simple statement about their everyday life. This is this research's and below models' response variable, which means we want to find factors to explain it. 
+
+Individuals using the Internet (% of population): Internet users are individuals who have used the Internet (from any location) in the last 3 months. Internet is a tool to connect to the world. Also, individials who could use internet has high possibility could read and understand news and other infomation around their daily life.
+
+GDP per capita (current US$): GDP per capita is gross domestic product divided by midyear population. This indicator is an popular indicator to estimate or represent economy growth. To some degree, the level of economy growth could connected to a economic entity's literacy rate because it related to the education investment and degree of a country's development.
+
+Immunization, DPT (% of children ages 12-23 months): Child immunization, DPT, measures the percentage of children ages 12-23 months who received DPT vaccinations before 12 months or at any time before the survey. Immunization rate could be an indicator connected to labor force and popualtion. Also higher immunization rate could represent higher civilization degree.
+
+Prevalence of HIV, total (% of population ages 15-49): Prevalence of HIV refers to the percentage of people ages 15-49 who are infected with HIV. Since HIV related to sex education, this might related to Literacy rate. With high rate of Literacy rate, people have more possibility to access the sex education and other health related education. 
+
+Population growth (annual %): Population is based on the de facto definition of population, which counts all residents regardless of legal status or citizenship. This is an transparent indicator connected to labor force and population, which, in my opinion, could be used to explain Literacy rate since literacy rate is an percentage of population.
+
+Mortality rate, infant (per 1,000 live births): Infant mortality rate is the number of infants dying before reaching one year of age, per 1,000 live births in a given year. This indicator related to medical level which could be considered as an indicator of economy and civilization, and population, thus it could be connected to Literacy rate.
+
+School enrollment, primary (% gross): Gross enrollment ratio is the ratio of total enrollment, regardless of age, to the population of the age group that officially corresponds to the level of education shown. The primary education is the best way to improve literacy rate of a country because the context of primary school is to educate student understand a short simple statement about their everyday life. 
+
+High-technology exports (% of manufactured exports): High-technology exports are products with high R&D intensity, such as in aerospace, computers, pharmaceuticals, scientific instruments, and electrical machinery. This indicator could explain total country's education level and also related to investment on Research & Development, which are highly related to population of enginnering and scientists. Therefore, it could be used as explainary factor of Literacy Rate.
+
+Unemployment, female (% of female labor force) (modeled ILO estimate): Unemployment refers to the share of the labor force that is without work but available for and seeking employment. From the result of research paper of Amir H. Mehryar,Akbar Aghajanian, Mohamad Tabibian and Farzaneh Tajdini (Women’s Education and Labor Force Participation and Fertility Decline in Iran ), improvement in the level of education of women has a clearly negative correlation to fertility. Also, high level of education of women correlated to low unemployment rate of female. Therefore, in my mind, this could be an explainary factor for Literacy rate.
+
+Rural population (% of total population):Rural population refers to people living in rural areas as defined by national statistical offices. In most of countries, people live in the city would have higher education level and by contract to the people live in the rural area. Thus, I select this factor to see whether location connected to Literacy Rate.
+
+Summary Statistics:
+
+Since data set of year 2014 has more full data of these 11 variables, I choose year 2014 for further model building.
+
+After I cleaned the data and remove all the NA of each line, only 41 countries with full dataset left.
+
+```{r,echo = FALSE,include=FALSE}
+require(tidyverse)
+require(gridExtra)
+require(usdm)
+library(lmtest)
+require(kableExtra)
+require(knitr)
+```
+
+
+```{r,echo = FALSE,include=FALSE}
+# Import Data
+data_Literacy <- read.csv("Literacy_rate.csv", header = F, sep=",", stringsAsFactors = F)
+data_using_int <- read.csv("using_the_internet.csv", header = F, sep=",", stringsAsFactors = F)
+data_GDP_per_ca <- read.csv("GDP_per_capita.csv", header = F, sep=",", stringsAsFactors = F)
+data_immunization <- read.csv("immunization.csv", header = F, sep=",", stringsAsFactors = F)
+data_hiv <- read.csv("Prevalence_HIV.csv", header = F, sep=",", stringsAsFactors = F)
+data_pop_growth <- read.csv("Population_growth.csv", header = F, sep=",", stringsAsFactors = F)
+data_Mortality_rate <- read.csv("Mortality_rate.csv", header = F, sep=",", stringsAsFactors = F)
+data_school_enroll <- read.csv("School_enrollment.csv", header = F, sep=",", stringsAsFactors = F)
+data_H_tech <- read.csv("High-technology.csv", header = F, sep=",", stringsAsFactors = F)
+data_unemployment_female <- read.csv("Unemployment_female.csv", header = F, sep=",", stringsAsFactors = F)
+data_Rural_pop <- read.csv("Rural_population.csv", header = F, sep=",", stringsAsFactors = F)
+
+# Check Data
+head(data_Literacy)
+```
+
+
+```{r,echo = FALSE, include=FALSE}
+# Combine Data
+data <- cbind((data_Literacy[,1]),(data_Literacy[, 59]), (data_using_int[, 59]), (data_GDP_per_ca[, 59]), (data_immunization[, 59]),(data_hiv[, 59]), (data_pop_growth[, 59]), (data_Mortality_rate[, 59]), (data_school_enroll[, 59]),(data_H_tech[, 59]), (data_unemployment_female[, 59]), (data_Rural_pop[, 59]))
+colnames(data) <- c("Countries", "Adult_Literacy", "Internet_Users", "GDP_Per_Capita","Immunization_DPT_Children","Prevalence_HIV","Population_Growth_Annual","Infant_Mortality_Rate","School_Enrollment","High_Tech_EXP","Unemployment_Female", "Urban_Population_Total")
+# Check Data
+head(data)
+tail(data)
+write.csv(data, "Data.csv",row.names = FALSE)
+```
+
+```{r,echo = FALSE,include=FALSE}
+
+# manipulate data 
+x <- read_delim("Data.csv", col_names=TRUE, delim=",")
+data_2014 <- x[complete.cases(x),]
+data_2014<-data_2014[-1, ]
+tail(data_2014)
+nrow(data_2014)
+
+```
+
+```{r,echo=FALSE,include=FALSE}
+#knitr::opts_chunk$set(echo = TRUE)
+#kable(data_2015$Countries,format.args = "," )
+data_2014$Countries
+# remove all non countries location
+data_2014<-data_2014[-c(11,12,13,15,22,24,25,26,29,30,31,32,34,36,41,42,43,45,46,48,47,51,52), ]
+# check country again
+data_2014$Countries
+```
+
+```{r,echo=FALSE}
+table(data_2014$Countries)
+```
+
+```{r,echo=FALSE,include=FALSE}
+# knitr::opts_chunk$set(echo = TRUE)
+# options(knitr.table.format="html")
+# kable(summary(data_2015[,-1]),format = "markdown" )
+summary(data_2014[,-1])
+```
+
+From above table, we can see that lots of big countries are moved from our data. There are important countries missing from our data and further models. From above, some countries are crowded in one geographical position. This may affect our model since data may not random selected. 
+
+iv. Methods:
+
+First, check for the distribution of 11 variables. We could understand whether they are normal distribution in order to do more data transformation and multi-factor regression in the next step.
+
+```{r,echo = FALSE,fig.width=18,fig.height=15}
+
+theme.info <- theme(plot.title = element_text(size=30, face = "bold", hjust=0.5),
+                    axis.title = element_text(size=20, face = "bold"),
+                    axis.text=element_text(size=20, face = "bold")) 
+
+par(mfrow=c(3,4))
+colnames <- dimnames(data_2014)[[2]]
+data_model <- data.frame(data_2014)
+
+for (i in 2:12) {
+  hist(data_model[,i], main=paste("Histogram of" , colnames[i]), xlab = colnames[i],probability=TRUE, col="#663A44", border="white")
+}+theme.info
+
+```
+
+From above histogram plot, we can see that both the response factor and explainary factors are all skewed. The Literacy rate, Immulization, Population Growth Annual, and Internet Use are left skewed and GDP per Capita and other factors are right skewed. Therefore, we need to perform natural log transformations to each of the variables used in our modeling.
+
+```{r,echo = FALSE,include=FALSE}
+data_model['t_Adult_Literacy'] <- log1p(data_model$Adult_Literacy)
+data_model['t_Internet_Users'] <- log1p(data_model$Internet_Users)
+data_model['t_GDP_Per_Capita'] <- log1p(data_model$GDP_Per_Capita)
+data_model['t_Immunization_DPT_Children'] <- log1p(data_model$Immunization_DPT_Children)
+data_model['t_Prevalence_HIV'] <- log1p(data_model$Prevalence_HIV)
+data_model['t_Population_Growth_Annual'] <- log1p(data_model$Population_Growth_Annual)
+data_model['t_Infant_Mortality_Rate'] <- log1p(data_model$Infant_Mortality_Rate)
+data_model['t_School_Enrollment'] <- log1p(data_model$School_Enrollment)
+data_model['t_High_Tech_EXP'] <- log1p(data_model$High_Tech_EXP)
+data_model['t_Unemployment_Female'] <- log1p(data_model$Unemployment_Female)
+data_model['t_Urban_Population_Total'] <- log1p(data_model$Urban_Population_Total)
+data.log <- data.frame(data_model[, (13:23)])
+data_log <- data.frame(data_model[,1],data.log)
+colnames(data_log) <- c("Countries", "t_Adult_Literacy", "t_Internet_Users", "t_GDP_Per_Capita","t_Immunization_DPT_Children","t_Prevalence_HIV","t_Population_Growth_Annual","t_Infant_Mortality_Rate","t_School_Enrollment","t_High_Tech_EXP","t_Unemployment_Female", "t_Urban_Population_Total")
+data_log <- data_log[complete.cases(data_log),]
+```
+
+Since the data of Population Growth Annual Factor has negative number, and at the mean time, the number of data are large, we choose to use log(1+data) to transform the data.
+
+```{r,echo = FALSE,fig.width=18,fig.height= 15}
+par(mfrow=c(3,4))
+colnames <- dimnames(data_log)[[2]]
+for (i in 2:12) {
+  hist(data_log[,i], main=colnames[i], probability=TRUE, col="#663A44", border="white")
+}+theme.info
+```
+
+We can see from the above histograms that these are looks more like normal distribution, and then we can check their correaltion between each other.
+
+
+```{r,echo = FALSE,fig.width=18,fig.height= 15}
+pairs(data_log[,c( "t_Internet_Users", "t_GDP_Per_Capita","t_Immunization_DPT_Children","t_Prevalence_HIV","t_Population_Growth_Annual","t_Infant_Mortality_Rate","t_School_Enrollment","t_High_Tech_EXP","t_Unemployment_Female", "t_Urban_Population_Total")], las=TRUE, pch=19, col="#663A44")+theme.info
+```
+From above scatter plot, we can see that GDP_Per_Capita and Internet_Users have positive correlation. Population_Growth_Annual and GDP_Per_Capita has negative correlation. 
+Therefore, we need to check multicollinearity in our data.
+```{r,echo = FALSE}
+vif(data_log[,c("t_Internet_Users", "t_GDP_Per_Capita","t_Immunization_DPT_Children","t_Prevalence_HIV","t_Population_Growth_Annual","t_Infant_Mortality_Rate","t_School_Enrollment","t_High_Tech_EXP","t_Unemployment_Female", "t_Urban_Population_Total")])
+```
+
+From the VIF test, we can see that GDP Per Capita and Internet Users are the factor we need to remove since their VIF is larger than 10.
+
+```{r,echo = FALSE,include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(knitr.table.format="markdown")
+cor(data_log[,(3:12)])
+```
+
+If we regard 0.7 as a high correlation, then Urban_Population_Total and Infant_Mortality_Rate have negative correlation with GDP_Per_Capita. Infant_Mortality_Rate have negative correlation with Internet_Users_Rate.But GDP Per Capita has high correlation to Internet User.
+
+```{r,echo=FALSE}
+data_model1 <- data_log[,-1]
+model1 <- lm(t_Adult_Literacy ~., data = data_model1)
+summary(model1)
+```
+
+From the Model One, I build a multi factor regression model to include all factors I selected. From the above result, only 2 factors are significant. Considering the VIF test, the factor GDP Per Capita is larger than 10 which should be remove from our model. For other factors VIF under 10, they should be moderate.
+
+
+```{r,echo=FALSE}
+model2 <- lm(t_Adult_Literacy ~t_Internet_Users+t_Unemployment_Female+t_Immunization_DPT_Children+t_Prevalence_HIV+t_Population_Growth_Annual+t_Infant_Mortality_Rate+t_School_Enrollment+t_High_Tech_EXP+t_Urban_Population_Total , data = data_model1)
+summary(model2)
+```
+From the Model Two, when the GDP Per Capita has been removed, the School Enrollment factor has become significant.
+Therefore, here I will remove other non significant factors to check multi factor regression model.
+```{r,echo=FALSE}
+model3<- lm(t_Adult_Literacy ~t_Internet_Users+t_School_Enrollment,data = data_model1)
+summary(model3)
+```
+
+based on α=0.05 and t-test, the model 3 with independent variables of Internet_Users and School Enrollment are the factors in our model at the end.
+
+Higher R square means Higher model representative and higher explain of model. Adjusted R square means R square adjusted with high explaintory factor since more factor at model would increase the R square by nature. Adjusted R square is work for decrease this increase by nature. 
+
+We can see that, comparing to the R square and adjusted R square at full model which includes all 10 independent variables, in Model 3, both R square and adjusted R square only decreased a little but our model is more simple and clean. This means, the model 3 still has high explaintory and more clean.  
+
+Assumption Check:
+
+1. x variables are fixed and measured without error. assumption not satisfied since this is information from surveys, etc. estimated by/reported to the World Bank. 
+
+2. E[ε]=0, assumption satisfied with LSE(Least Squares Estimator)
+
+```{r,echo=FALSE,fig.width=18,fig.height= 10}
+par(mfrow=c(2,2))
+plot(model3)
+
+```
+
+3. Var[ε]=σ2, From above plot, the residual looks clouded and centering with the larger independent valuables.
+```{r,echo=FALSE,warning = FALSE,error = FALSE,message = FALSE,fig.width=18,fig.height= 15}
+
+par(mfrow=c(2,2))
+
+plot(model3$fitted, model3$residuals, las=TRUE, 
+     main="Residuals vs. Fitted Values", 
+     xlab="Fitted Values (%)", ylab="Residuals (%)")+theme.info+
+  abline(h=0, col = "#663A44", lty = 2)
+
+plot(data_log$t_Internet_Users, model3$residuals, las=TRUE, 
+     main="Residuals vs. Internet_Users (%)", 
+     xlab="Internet Users (%)", ylab="Residuals (%)")+theme.info+
+  abline(h=0, col = "#663A44", lty = 2)
+
+plot(data_log$t_School_Enrollment, model3$residuals, las=TRUE, 
+     main="Residuals vs. School_Enrollment (%)", 
+     xlab="School Enrollment (%)", ylab="Residuals (%)")+theme.info+
+  abline(h=0, col = "#663A44", lty = 2)
+
+
+```
+
+4. ε’s are normally distributed, from Normal Q-Q plot, the residual looks slightly heavy-tailed , thus assumption not satisfied.
+
+5. ε’s are independent, from residual plot above with two independent variables, the residual looks not exist centering and clouded condition, thus assumption satisfied.
+
+6. x variables are not too highly correlated (collinearity/multicollinearity), checked by VIF, assumption satisfied.
+
+Also, testing the Positive Autocorrelatio of residuals
+H0 : no residual correlation, ρ = 0
+Ha : positive residual autocorrelation, ρ > 0
+
+```{r,echo=FALSE}
+dwtest(model3)
+```
+
+From result above, under significance level 5%, we can reject the H0 and the residuals exist negative autocorrelation.
+However, the p-value for the overall F-statistic in the final model(model 3) is less than α = 0.05, so we can say that our overall model is significant.
+
+v. Results:
+
+My final multi-factor regression model is: ŷ Adult Literacy Rate =  -2.49680 % + 0.29826 % / % x Internet_Users – 1.25404  % / % x School_Enrollment_Rate.
+
+This can be interpreted as: holding all other variables constant, a 1% increase in Internet_Users % is associated with a 0.30% increase in the adult literacy rate and a 1% increase in School Enrollment Rate is associated with a 1.25% increase in the adult literacy rate.
+
+vi. References:
+
+1) The World Bank: http://data.worldbank.org/indicator
+
+2) Women’s Education and Labor Force Participation and Fertility Decline in Iran (2002, Amir H. Mehryar, Akbar Aghajanian, Mohamad Tabibian and Farzaneh Tajdini)
