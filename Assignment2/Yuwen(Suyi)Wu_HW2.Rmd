@@ -1,0 +1,460 @@
+---
+title: "Homework 2"
+author: '***Yuwen(Suyi)Wu 5:45-7:45***'
+date: "2/28/2019"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+require(tidyverse)
+require(readxl)
+require(tidyverse)
+require(gridExtra)
+require(broom)
+library(ggplot2)
+require(DAAG)
+require(GGally)
+```
+
+## Question 1
+
+Read the posted article, “Bordeaux wine vintage quality and weather,” by Ashenfelter, Ashmore, and LaLonde (CHANCE, 1995). Three regression models are considered in this article. Answer the following questions:
+
+(a) What is a wine “vintage”?
+
+
+A wine vintage is the specified year when the primarily grapes that uesed to make wine were harvested. 
+
+A wine’s vintage could largely represented taste and quality of a wine because the weather of that vintage would affects the grapes' quality and mature throughout the growing season.
+
+
+(b) What is the response variable for the three models described in this paper?
+
+
+The response variable for the three models described in this paper is logarithm of the price relative to 1961 (LPRICE2).
+
+
+
+(c) Which values of LPRICE2 are missing and, according to the article, why have they been omitted?
+
+
+```{r,warning = FALSE,error = FALSE,message = FALSE,fig.width=14, fig.height=10}
+# import data
+winedata<- read_delim("wine.dat", col_names=TRUE,delim=',') 
+# find missing data
+missingvalue <-filter(winedata, winedata$LPRICE2 == ".")
+# The value of LPRICE2 missed:
+missingvalue$VINT
+
+```
+
+The vintages of 1954 and 1956 are not plotted because these wines were rarely sold.
+From the article, the wine needs 28 years to mature.
+Therefore, the vintages of 1981,1982,1983,1984,1985,1986,1987,1988 and 1989 are not ploted because these wines were not mature at that time.
+
+(d) Make a scatterplot matrix of the variables (explanatory and response) included in the models. Describe what you see.
+
+
+```{r,warning = FALSE,error = FALSE,message = FALSE,fig.width=14, fig.height=10}
+# check type of column, in this case, the LPRICE2 and DEGREES are chr type.
+winedata
+# filter the na data
+newwinedata <-filter(winedata, winedata$LPRICE2 != ".")
+# make chr type to numeric type
+newwinedata$LPRICE2 <- as.numeric(newwinedata$LPRICE2)
+newwinedata$DEGREES <- as.numeric(newwinedata$DEGREES)
+
+# make a scatterplot matrix of the varuables included in the models.
+
+# first model
+pairs(newwinedata[,c("VINT", "LPRICE2")], las = T, pch = 19, col = "firebrick")
+pairs(newwinedata[,c("TIME_SV", "LPRICE2")], las = T, pch = 19, col = "firebrick") ## this is model mentioned in the article
+
+```
+
+From above scatterplot, all shows that with longer time wine stored, the price or return would be higher. And the vintage has negative linear relationship with LPRICE2.
+
+
+```{r,warning = FALSE,error = FALSE,message = FALSE,fig.width=14, fig.height=10}
+
+# second model
+pairs(newwinedata[,c("LPRICE2","TIME_SV","DEGREES", "HRAIN", "WRAIN" )], las = T, pch = 19, col = "firebrick")
+```
+
+There is a negative linear relationship between VINT and LPRICE2, a positive linear relationship between TIME_SV and LNPRICE2, a pisitive linear relationship between LPRICE2 and DEGREES and a negative linear relationship between LPRICE2 and HRAIN.The relation between VINT and TIME_SV is a complete negative relation which is because of the time saving is the result of present year minus vintage.
+
+
+
+(e) Fit the two regression models from the paper. Which is the best regression model?
+
+Justify your answer and include relevant output (let α = 0.05). Did you choose the same model as the authors?
+
+
+```{r,warning = FALSE,error = FALSE,message = FALSE,fig.width=14, fig.height=10}
+# linear regression model for one factor and multifactor
+
+rm1 <- lm(LPRICE2~TIME_SV,data = newwinedata)
+rm2 <- lm(LPRICE2~TIME_SV+DEGREES+HRAIN+WRAIN,data=newwinedata)
+
+# check the result of regression models
+
+summary(rm1)
+summary(rm2)
+
+
+# partial F-test
+
+anova(rm1, rm2)
+
+# p-value = P(F > 26.173)
+pf(26.173, df1=3, df2=22, lower.tail=FALSE)
+```
+
+The model2 is better because the Adjusted R square of model2 (0.7962) is larger than Adjusted R square of model1 (0.1804).
+
+Hypothesis:
+H0:  β(WRAIN) = β(HRAIN) = β(DEGREES) = 0
+H1:  At least one of beta is not zero
+(y-intercept is not included)
+significance level : α = 0.05
+test statistic: F = 26.173 of 4 and 22 degrees of freedom
+P-value of F test is 4.058e-08 < α = 0.05
+At partial F-test, P-value is 1.90895e-07 < α = 0.05
+
+we should reject null hypothesis which is all beta are equal to zero
+
+at least one of betas is significantly different from 0.
+Therefore, the second model is better than the first model.I choose the same model as the author did.
+
+
+
+(f) What is the sample size for your models?
+
+
+```{r,warning = FALSE,error = FALSE,message = FALSE,fig.width=14, fig.height=10}
+# find out the sample size
+nrow(newwinedata)
+# the sample size is 27
+```
+
+(g) Write out the regression equation of the model you chose in part (e). Remember to include the units of measurement. Interpret the partial slopes and the y-intercept. Does the y-intercept have a practical interpretation?
+
+
+LPRICE2(per dozen bottle in $) = -12.15 - 0.02385(1/years)*TIME_SV(years) + 0.6164(1/℃)*DEGREES(℃) - 0.003861(1/ml)*HRAIN(ml) + 0.00167(1/ml)*WRAIN(ml)
+
+beta for factor TIME_SV: if the age of vintage increase 1 year, holding other exploratory variables DEGREES, WRAIN and HRAIN constant, the log of average vintage price relative to 1961 decreases roughly 0.02385.
+
+beta for factor DEGREES: if the average temperature over growing season increase 1℃, holding other exploratory variables TIME_SV, WRAIN and HRAIN constant, the log of average vintage price relative to 1961 increases roughly 0.6164.
+
+beta for factor HRAIN: if the rain in September and August increase 1 ml, holding other exploratory variables TIME_SV, DEGREES and WRAIN constant, the log of average vintage price relative to 1961 decreases roughly 0.003861.
+
+beta for factor WRAIN: if the rain in the months preceeding the vintage increase 1 ml, holding other exploratory variables TIME_SV, DEGREES and HRAIN constant, the log of average vintage price relative to 1961 increases roughly 0.00167.
+
+Y-intercept: if the age of vintage is 0 year, the average temperature over the growing season is 0℃, the rain both in the months preceding the vintage and in September and August is 0 ml, the log of average vintage price relative to 1961 would be roughly -12.15.
+
+The y-intercept does not have practical interpretation. Since the minimum values of DEGREES, WRAIN and HRAIN are 14.98℃, 376.0 ml and 38.0 m.
+
+The y-intercept does not have a practical interpretation.
+
+
+
+(h) Make a table with the following statistics for both models: SSE, RMSE, PRESS, and RMSE jackknife . Compare the relevant statistics. Based on this information, would you change your answer to part (e)? Justify your answers.
+
+```{r,warning = FALSE,error = FALSE,message = FALSE,fig.width=14, fig.height=10}
+# Calcualte RMSE(Residual Mean Standard Error)
+RMSE.1 <- summary(rm1)$sigma
+# Model 1 has RMSE of 0.5745
+RMSE.2 <- summary(rm2)$sigma
+# Model 2 has RMSE of 0.2865
+
+# Calculate SSE(Sum of Squared Error)
+anova.1 <- anova(rm1)
+SSE.1 <- anova.1$`Sum Sq`[2]
+# Model 1 has SSE of 8.2509
+anova.2 <- anova(rm2)
+SSE.2 <- anova.2$`Sum Sq`[5]
+# Model 2 has SSE of 1.8058
+
+# Calculate PRESS 
+PRESS.1 <- press(rm1)
+# Model 1 has PRESS of 9.395569
+PRESS.2 <- press(rm2)
+# Model 2 has PRESS of 2.816957
+
+# Calculate RMSE jackknife
+# Linear Regression Model One has only one variable
+jack.1 <- sqrt(press(rm1)/(nrow(newwinedata)-1-1))
+# Model 1 has RMSE jackknife of 0.6130438
+jack.2 <- sqrt(press(rm2)/(nrow(newwinedata)-4-1))
+# Linear Regression Model Two has 4 variables 
+# Model 2 has RMSE jackknife of 0.3578317
+
+table <- data.frame("lm.1" = c(SSE.1, RMSE.1, PRESS.1, jack.1), "lm.2" = c(SSE.2, RMSE.2, PRESS.2, jack.2))
+rownames(table) <- c("SSE", "RMSE", "PRESS", "MSE(Jackknife)")
+table
+
+```
+Based on the table, model 2 has smaller SSE, RMSE, PRESS and RMSE(jackknife) than model1, which means model 2 fits better. Therefore, I would not change my answer in part (e).
+
+
+(i) Could we use these regression models to predict quality for wines produced in 2005? Justify your answer.
+
+
+We cannot use these models to predict the quality for wines produced in 2005. 
+Firstly, the data of VINT, DEGREES, HRAIN, WRAIN in 2005 is not included in the database. 
+Secondly, in this case, we have to predict in extrapolation method, in this case, we cannot make sure that our prediction in the correct range for all x 0 s simultaneously and is feasible.
+
+
+
+## Question 2
+
+(a) Do some internet research and write a short paragraph in your own words about how the Pineo-Porter prestige score is computed. Include the reference(s) you used. Do you think this score is a reliable measure? Justify your answer.
+
+```
+Pineo-Porter prestige score is a measurement for occupation, from a social survey conducted in the mid-1960.
+
+Occupational prestige (also known as job prestige) is a way for sociologists to describe the relative social class positions people have. It refers to the consensual nature of rating a job based on the belief of its worthiness. 
+
+Sociologists have identified prestige rankings for more than 700 occupations based on results from a series of national surveys.
+
+They created a scale with 0 being the lowest possible score to 100 being the highest, and then ranked the occupations based on the results of the survey.
+
+Pineo, Porter, McRoberts scale of 1977 is the one of prestige score that ordered major groups.
+
+Above mentioned scale score is the Pineo-Porter prestige score.
+
+I think it is a reliable and valuabel measure because many researchers prefered it and it ordered by major groups which reduced the dummy variables to do linear regression analysis. 
+
+```
+
+This is the [Wikipedia](https://en.wikipedia.org/wiki/Occupational_prestige),where we can search for the definition of Pineo-Porter presitge score.
+
+
+(b) Create a scatterplot matrix of all the quantitative variables. Use a different symbol for each profession type: no type (pch=3), “bc” (pch=6), “prof” (pch=8), and “wc” (pch=0) when making your plot. For the remainder of this question, we will use the explanatory variables: income, education, and type. Does restricting our regression to only these variables make sense given your exploratory analysis? Justify your answer.
+
+```{r,warning = FALSE,error = FALSE,message = FALSE,fig.width=16, fig.height=14}
+# import data
+prestige <- read_delim("prestige.dat", col_names=TRUE,delim=',') 
+# check data
+head(prestige)
+# plot the pair plot
+theme.info <- theme(plot.title = element_text(size=30, hjust=0.5),
+                    axis.title = element_text(size=30),
+                    axis.text = element_text(size=30),
+                    legend.title = element_text(color = "black", size = 30),
+                    legend.text = element_text(color = "black", size = 30))
+# set pchs
+pchs <- rep(NA,times = nrow(prestige))
+prestige$type[prestige$type == ""] <- NA
+pchs[prestige$type == "bc"] <- 6
+pchs[is.na(prestige$type)] <- 3
+pchs[prestige$type == "prof"] <- 8
+pchs[prestige$type == "wc"] <- 0
+# check pchs
+pchs
+
+# set color
+color.setting <- rep(NA,nrow(prestige))
+color.setting [prestige$type == "bc"] <- "#663A44"
+color.setting [is.na(prestige$type)] <- "#5F7880"
+color.setting [prestige$type == "prof"] <- "#CAA78D"
+color.setting [prestige$type == "wc"] <- "#2F4F4F"
+# plot the pairs
+pairs(prestige[,c("education","income","women","prestige")],pch = pchs, col = color.setting)
+```
+
+```
+Restricting our regression to only these variables make sense.
+Firstly, we delete non-related column of census. Secondly, it could be seen from scatterplot, education and income have linear relationship to prestige but the woman does not. Therefore, we could delete woman data in regression model.
+
+```
+
+
+(c) Which professions are missing “type”? Since the other variables for these observations are available, we could group them together as a fourth professional category to include them in the analysis. Is this advisable or should we remove them from our data set? Justify your answer.
+```{r,warning = FALSE,error = FALSE,message = FALSE,fig.width=14, fig.height=10}
+prestige$occupation.group[is.na(prestige$type)]
+# These four professions are  "athletes"    "newsboys"    "babysitters" "farmers" 
+prestige <- prestige[!is.na(prestige$type),]
+```
+
+Since these four occupations are not belong to a specific profession type, we should remove it rather than group them together as a fourth professional category. 
+
+
+
+(d) Visually, does there seem to be an interaction between type and education and/or type and income? Justify your answer.
+```{r,warning = FALSE,error = FALSE,message = FALSE,fig.width=14, fig.height=10}
+col.vector <- c("bc"="#663A44","prof"="#CAA78D","wc"="#2F4F4F")
+s.1 <- prestige %>% ggplot(aes(x=education, y=prestige, col=type)) +
+            geom_point(size=3) +
+            scale_color_manual(values=col.vector) + 
+            theme.info
+s.2 <- prestige %>% ggplot(aes(x=income, y=prestige, col=type)) +
+            geom_point(size=3) +
+            scale_color_manual(values=col.vector) + 
+            theme.info
+s.3 <- prestige %>% ggplot(aes(x=log(income), y=prestige, col=type)) +
+            geom_point(size=3) +
+            scale_color_manual(values=col.vector) + 
+            theme.info
+s.1
+s.2
+s.3
+```
+
+From above scatterplot, it could be seen that there is an interaction between type and education and type and income. 
+
+The income have a curved relationship with prestige and log(income) have a linear relationship with prestige.
+
+With the different shapes of point, the people who are in professional occupation have higher education level and higher income than white collar and blue collar.
+
+
+
+(e) Fit a model to predict prestige using: income, education, type, and any interaction terms based on your answer to part (d). Evaluate the model and include relevant output. Use your answer to part (c) to determine which observations to use in your analysis.
+
+```{r,warning = FALSE,error = FALSE,message = FALSE,fig.width=14, fig.height=10}
+lm.2e <- lm(prestige~education+income+type+education*type+income*type, data = prestige)
+summary(lm.2e)
+```
+
+```
+under the t test of beta = 0, with alpha = 0.05, assume regression assumptions are satisfied, with 89 degrees of freedom. 
+
+slope of education, type of prof, type of white collar, education when type of prof are not statistically significant.
+
+slope of income, education when type of white collar, income when type of prof, income when type of white colla are statistically significant.
+
+p-value of overall F-statistic is small enough, and F test is significant.
+
+Under adjusted R squared, about 86.34% of the variability in prestige can be explained by a regression model all above mentioned variables(education,income,type,education when prof, education when white collar, income when prof, income when white collar)
+
+
+Since income when type of prof is significant, we cannot delete the variable of type even the dummy variable type is not statistically significant. 
+
+Since education when type of white collar is statistically significant, we cannot delete the variable of education even education is not statistically significant.
+
+Final Model
+When Type = bc:
+Prestige(points) = 2.28(points) + 1.7(points/years) * education(years) + 0.00352(points/$) * income($)
+
+When Type = prof: 
+Prestige (points) = 2.28(points) + 15.35(points) + 1.7(points/years) * education(years) + 0.00352(points/$) * income($) + 1.39(points/years) * education(years) - 0.0029(points/$) * income($)
+
+Prestige (points) = 17.63(points) + 3.09(points/years)*education(years) + 0.00062(points/$) * income($)
+
+
+When Type = white collar: 
+
+Prestige(points) = 2.28(points) - 33.54(points) + 1.7(points/years) * education(years) + 0.00352(points/$) * income($) + 4.29(points/years) * education(years) - 0.0021(points/$) * income($)
+
+Prestige(points) = -31.26(points) + 5.99(points/years) * education(years) + 0.00142(points/$) * income($)
+
+
+
+```
+
+(f) Create a histogram of income and a second histogram of log(income) (i.e., natural logarithm). How does the distribution change?
+
+```{r,warning = FALSE,error = FALSE,message = FALSE,fig.width=14, fig.height=10}
+
+hist.1<- prestige %>% ggplot(aes(income)) +
+  geom_histogram(bins=15, fill="#663A44", col="gray50") +
+  ggtitle("Income") + 
+  labs(x = "Income") +
+  theme.info
+
+hist.2<- prestige %>% ggplot(aes(log(income))) +
+  geom_histogram(bins=15, fill="#663A44", col="gray50") +
+  ggtitle("Log Income") + 
+  labs(x = "log(Income)") +
+  theme.info
+
+grid.arrange(hist.1,hist.2,ncol=2)
+
+## The distribution change from positive skewed to distribution looks approximately symmetric.  
+```
+
+
+(g) Fit the model in (e) but this time use log(income) (i.e., natural logarithm) instead of income. Evaluate the model and provide the relevant output.
+
+```{r,warning = FALSE,error = FALSE,message = FALSE,fig.width=14, fig.height=10}
+
+prestige.2g <- prestige[,-3]
+data.2g <- data.frame(prestige.2g,log(prestige$income))
+lm.2g <- lm(prestige~education+log.prestige.income.+type+education*type+log.prestige.income.*type,data = data.2g)
+summary(lm.2g)
+```
+```
+under the t test of beta = 0, with alpha = 0.05, assume regression assumptions are satisfied, with 89 degrees of freedom. 
+
+slope of education, log of income, type of prof, education when type of white collar and log income when type of prof are statistically significant.
+
+slope of type of white collar, education when type of prof, log income when type of white collar are not statistically significant.
+
+Under adjusted R squared, about 85.95% of the variability in prestige can be explained by a regression model all above mentioned variables(education,income,type,education when prof, education when white collar, income when prof, income when white collar)
+
+p-value of overall F-statistic is small enough, and F test is significant.
+
+
+Final model:
+When Type = bc:
+
+Prestige (points) = -120.0459(points) + 2.3357(points/years) * education(years) + 15.9825(points/$) * log.income($)
+
+When Type = prof:
+Prestige (points) = -120.0459(points) + 2.3357(points/years) * education(years) + 15.9825(points/$) * log.income($) + -85.1601(points) + 0.6974(points/years) * education(years) - 9.4288(points/$) * log.income($)
+Prestige (points) = -34.8858(points) + 3.0331(points/years) * education(years) + 6.5537(points/$) * log.income($)
+
+When Type = white collar:
+Prestige(points) = -120.0459(points) + 2.3357(points/years) * education(years) + 15.9825(points/$) * log.income($) + 30.2412(points) + 3.6400(points/years) * education(years) - 8.1556(points/$) * log.income($)
+Prestige(points) = -89.8047(points) + 5.9757(points/years) * education(years) + 7.8269(points/$) * log.income($)
+
+```
+
+
+(h) Is the model in (e) or (g) better? Justify your answer. Why can’t we use a partial F-test here?
+```{r,warning = FALSE,error = FALSE,message = FALSE,fig.width=14, fig.height=10}
+# Calcualte RMSE(Residual Mean Standard Error)
+RMSE.e <- summary(lm.2e)$sigma
+# Model e has RMSE of 6.318211
+RMSE.g <- summary(lm.2g)$sigma
+# Model g has RMSE of 6.408734
+
+# Calculate SSE(Sum of Squared Error)
+anova.2e <- anova(lm.2e)
+SSE.e <- anova.2e$`Sum Sq`[2]
+# Model e has SSE of 1791.966
+anova.2g <- anova(lm.2g)
+SSE.g <- anova.2g$`Sum Sq`[5]
+# Model g has SSE of 290.3298
+
+## Calculate PRESS 
+PRESS.e <- press(lm.2e)
+# Model e has PRESS of 4285.977
+PRESS.g <- press(lm.2g)
+# Model g has PRESS of 4399.257
+
+# Calculate RMSE jackknife
+# Linear Regression Model e has 8 variable
+jack.e <- sqrt(press(lm.2e)/(nrow(prestige)-8-1))
+# Model e has RMSE jackknife of 6.939528
+jack.g <- sqrt(press(lm.2g)/(nrow(prestige.2g)-8-1))
+# Linear Regression Model g has 8 variables 
+# Model g has RMSE jackknife of 7.030637
+
+table2 <- data.frame("lm.e" = c(SSE.e, RMSE.e, PRESS.e, jack.e), "lm.g" = c(SSE.g, RMSE.g, PRESS.g, jack.g))
+rownames(table2) <- c("SSE", "RMSE", "PRESS", "MSE(Jackknife)")
+table2
+```
+
+```
+
+The income have a curved relationship with prestige and log(income) have a linear relationship with prestige.
+
+The linear regression model (e) has higher adjusted R-square(0.8634) than adjusted R-square(0.8595) in lineaer regression model (g).
+
+Additionally, The model (e) has smaller SSE, RMSE, PRESS and RMSE(jackknife) than model in (g). Thus, model in (e) is better than model in (g).
+
+We cannot use partial F-test here because these two models are not nested in each other. 
+```
